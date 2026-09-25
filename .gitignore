@@ -4,5 +4,5 @@ __pycache__/
 .env
 backend/data/Reviews.csv
 backend/data/sentiment_results.csv
-backend/topic_model/
-backend/negative_topic_model/
+backend/topic_model
+backend/negative_topic_model
