@@ -1,4 +1,8 @@
-venv/ 
-__pycache__/ 
-*.pyc 
-backend/data/Reviews.csv 
+venv/
+__pycache__/
+*.pyc
+.env
+backend/data/Reviews.csv
+backend/data/sentiment_results.csv
+backend/topic_model/
+backend/negative_topic_model/

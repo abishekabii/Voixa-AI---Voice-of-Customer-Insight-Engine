@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from transformers import pipeline
 
-app = FastAPI(title="Voixa AI - Sentiment Service")
+app = FastAPI(title="Voixa-AI - Voice-of-Customer-Insight-Engine")
 
 # Load the sentiment model once at startup (not per-request)
 sentiment_analyzer = pipeline(
