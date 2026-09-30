@@ -1,69 +1,122 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+
+const COLORS = { POSITIVE: '#22c55e', NEGATIVE: '#ef4444' }
+
+export default function Dashboard() {
+  const [feedback, setFeedback] = useState([])
+  const [topics, setTopics] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchData() {
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from('feedback')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      const { data: topicsData, error: topicsError } = await supabase
+        .from('topics')
+        .select('*')
+        .order('review_count', { ascending: false })
+
+      if (feedbackError) console.error('Feedback fetch error:', feedbackError)
+      if (topicsError) console.error('Topics fetch error:', topicsError)
+
+      setFeedback(feedbackData || [])
+      setTopics(topicsData || [])
+      setLoading(false)
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen text-lg">Loading insights...</div>
+  }
+
+  const sentimentCounts = [
+    { name: 'POSITIVE', value: feedback.filter(f => f.sentiment === 'POSITIVE').length },
+    { name: 'NEGATIVE', value: feedback.filter(f => f.sentiment === 'NEGATIVE').length },
+  ]
+
+  const totalNegative = sentimentCounts.find(s => s.name === 'NEGATIVE')?.value || 0
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.js
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-gray-50 p-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">Voixa AI — Voice of Customer Insights</h1>
+      <p className="text-gray-500 mb-8">{feedback.length} reviews analyzed · {totalNegative} flagged as negative</p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Sentiment breakdown */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Sentiment Breakdown</h2>
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie data={sentimentCounts} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                {sentimentCounts.map((entry, i) => (
+                  <Cell key={i} fill={COLORS[entry.name]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Top issues by volume */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Top Recurring Issues</h2>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={topics.slice(0, 8)} layout="vertical" margin={{ left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" />
+              <YAxis type="category" dataKey="label" width={140} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey="review_count" fill="#ef4444" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-      </main>
-    </div>
-  );
+      </div>
+
+      {/* Issue table */}
+      <div className="bg-white rounded-xl shadow p-6 mb-8">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">All Issue Themes</h2>
+        <table className="w-full text-sm text-left">
+          <thead>
+            <tr className="border-b text-gray-500">
+              <th className="py-2 pr-4">Issue</th>
+              <th className="py-2 pr-4">Keywords</th>
+              <th className="py-2">Reviews</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topics.map(t => (
+              <tr key={t.id} className="border-b last:border-0">
+                <td className="py-2 pr-4 font-medium text-gray-800">{t.label}</td>
+                <td className="py-2 pr-4 text-gray-500">{t.keywords}</td>
+                <td className="py-2 text-gray-800">{t.review_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Recent negative feedback */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Negative Feedback</h2>
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {feedback.filter(f => f.sentiment === 'NEGATIVE').slice(0, 20).map(f => (
+            <div key={f.id} className="border-l-4 border-red-400 pl-3 py-1">
+              <p className="text-sm text-gray-700">{f.text}</p>
+              {f.topic_label && <span className="text-xs text-red-500">Issue: {f.topic_label}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
+  )
 }
