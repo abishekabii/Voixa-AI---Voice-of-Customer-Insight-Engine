@@ -1,9 +1,3 @@
 fastapi
 uvicorn
-pandas
 transformers
-sentence-transformers
-bertopic
-scikit-learn
-supabase
-python-dotenv
